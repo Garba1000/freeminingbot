@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cloud Mining</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+  <style>
+    :root{
+      --bg:#0d1117; --card:#161b22; --text:#eaeef2; --muted:#9aa4af;
+      --accent:#00c853; --accent-2:#2dd4bf; --danger:#ef4444;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;background:var(--bg);color:var(--text);}
+    h1{margin:16px 0;color:var(--accent)}
+    .container{padding:16px;max-width:980px;margin:0 auto}
+    .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));}
+    .card{background:var(--card);border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.35);padding:18px}
+    .btn{display:inline-flex;align-items:center;justify-content:center;width:100%;padding:12px 14px;border:0;border-radius:10px;background:var(--accent);color:#07130a;font-weight:700;cursor:pointer}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .btn.secondary{background:#263143;color:var(--text)}
+    .row{display:flex;gap:8px;align-items:center;justify-content:space-between}
+    .muted{color:var(--muted)}
+    .stat{font-size:28px;font-weight:800}
+    .progress-wrap{background:#2a3444;border-radius:10px;overflow:hidden;height:14px}
+    .progress{background:var(--accent);height:100%;width:0%;transition:width .6s linear}
+    .circle-wrap{position:relative;width:190px;height:190px;margin:0 auto}
+    svg{display:block;margin:0 auto}
+    .circle-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.2}
+    .circle-text .big{font-size:18px;font-weight:800}
+    .circle-text .small{font-size:12px;color:var(--muted)}
+    .hint{font-size:12px;color:var(--muted);margin-top:6px}
+    input,select{width:100%;padding:10px;border-radius:10px;border:1px solid #2b3648;background:#0f1420;color:var(--text)}
+    .hr{height:1px;background:#233047;margin:12px 0}
+    #claimTaskSection { margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <div class="container" id="mainContainer" style="display:none;">
+    <h1>☁️ Cloud Mining</h1>
+    <div class="grid">
+
+      <!-- Earnings Card -->
+      <div class="card">
+        <div class="row"><div>💰 Total Balance</div><div class="muted">Withdraw ≥ $10</div></div>
+        <div class="stat">$<span id="totalBalance">0.00</span></div>
+        <div class="hr"></div>
+        <div class="row"><div>⏳ Today</div><div class="muted">cap: $<span id="todayMax">0.00</span></div></div>
+        <div class="row" style="gap:10px">
+          <div class="stat" style="font-size:22px">$<span id="todayEarnings">0.0000</span></div>
+          <div class="muted" id="percentTxt">0%</div>
+        </div>
+        <div class="progress-wrap" aria-label="Daily progress">
+          <div class="progress" id="progressBar"></div>
+        </div>
+        <div class="hint">🕒 Time left today: <span id="timeLeft">24:00:00</span></div>
+        <div class="hr"></div>
+        <div class="row">
+          <div>⚡ Gold Energy: <b><span id="goldEnergy">20</span></b></div>
+          <div class="muted">Speed: +<span id="speed">0.000000</span> USDT/sec</div>
+        </div>
+        <div style="margin-top:12px" class="row">
+          <button class="btn" id="miningBtn">▶ Start Mining</button>
+        </div>
+        <div class="hint">Profit is added every second until you reach today's cap. Mining pauses if you leave the page.</div>
+      </div>
+
+      <!-- Circular progress card -->
+      <div class="card">
+        <div class="circle-wrap">
+          <svg id="progressCircle" width="190" height="190" viewBox="0 0 190 190">
+            <circle cx="95" cy="95" r="85" stroke="#213047" stroke-width="12" fill="none"/>
+            <circle id="circleBar" cx="95" cy="95" r="85" stroke="var(--accent-2)" stroke-width="12" fill="none"
+                    stroke-linecap="round" transform="rotate(-90 95 95)" stroke-dasharray="534" stroke-dashoffset="534"/>
+          </svg>
+          <div class="circle-text">
+            <div class="big" id="circlePct">0%</div>
+            <div class="small">$<span id="circleEarn">0.0000</span> / $<span id="circleCap">0.00</span></div>
+            <div class="small" id="circleTime">24:00:00</div>
+          </div>
+        </div>
+        <div class="hint">Daily countdown & earnings progress</div>
+      </div>
+
+      <!-- Claim Gold Card -->
+      <div class="card">
+        <div class="row"><div>🏅 Claim Gold</div><div class="muted">+5 Gold Energy</div></div>
+        <button class="btn secondary" id="claimGoldBtn">Claim Gold</button>
+        <div id="claimTaskSection"></div>
+        <div class="hint">Complete the task to claim +5 Gold Energy.</div>
+      </div>
+
+      <!-- Referral & Info -->
+      <div class="card">
+        <div class="row"><div>🔗 Referral</div><div class="muted">Earn 5% in USDT</div></div>
+        <button class="btn" id="referralBtn">Copy Referral Link</button>
+        <div class="hr"></div>
+        <div class="row"><div>ℹ️ Help</div></div>
+        <button class="btn secondary" id="infoBtn">How to earn & withdraw</button>
+      </div>
+
+      <!-- Withdraw -->
+      <div class="card">
+        <div class="row"><div>💵 Withdraw</div><div class="muted">min $10</div></div>
+        <select id="method" style="margin-top:8px">
+          <option value="bank">Bank</option>
+          <option value="ltc">Litecoin</option>
+          <option value="palmpay">PalmPay</option>
+          <option value="payeer">Payeer</option>
+          <option value="opay">OPay</option>
+        </select>
+        <input id="details" placeholder="Account / Wallet details" style="margin-top:8px"/>
+        <button class="btn" id="withdrawBtn" style="margin-top:10px">Send Withdraw Request</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tg = window.Telegram.WebApp ?? { sendData: () => {}, expand: () => {} };
+    tg.expand();
+
+    const K_TOTAL='total_balance', K_TODAY='today_earnings', K_ENERGY='gold_energy', K_MINING='is_mining', K_LAST_RESET='last_reset';
+    let totalBalance=parseFloat(localStorage.getItem(K_TOTAL))||0;
+    let todayEarnings=parseFloat(localStorage.getItem(K_TODAY))||0;
+    let goldEnergy=parseInt(localStorage.getItem(K_ENERGY))||20;
+    let lastReset=parseInt(localStorage.getItem(K_LAST_RESET))||Date.now();
+    let isMining=localStorage.getItem(K_MINING)==='true';
+    const el=id=>document.getElementById(id);
+    const circle=el('circleBar'); const CIRC=2*Math.PI*85; circle.setAttribute('stroke-dasharray',String(CIRC));
+
+    function dailyCap(e){ if(e>=1000)return 0.20;if(e>=100)return 0.16;if(e>=60)return 0.10;if(e>=20)return 0.002;return 0.005;}
+    function perSecond(){return dailyCap(goldEnergy)/86400;}
+    function checkReset(){const now=Date.now();if(now-lastReset>=86400000){todayEarnings=0;lastReset=now;localStorage.setItem(K_TODAY,todayEarnings);localStorage.setItem(K_LAST_RESET,lastReset);}}
+    function timeLeftMs(){return Math.max(0,86400000-(Date.now()-lastReset));}
+    function fmtHMS(ms){let s=Math.floor(ms/1000);const h=Math.floor(s/3600).toString().padStart(2,'0');const m=Math.floor((s%3600)/60).toString().padStart(2,'0');const sec=(s%60).toString().padStart(2,'0');return `${h}:${m}:${sec}`;}
+
+    function updateUI(){
+      const cap=dailyCap(goldEnergy), rps=perSecond();
+      el('totalBalance').textContent=totalBalance.toFixed(2);
+      el('todayEarnings').textContent=todayEarnings.toFixed(4);
+      el('todayMax').textContent=cap.toFixed(2);
+      el('goldEnergy').textContent=goldEnergy;
+      el('speed').textContent=rps.toFixed(6);
+      const pct=Math.min(100,(todayEarnings/cap)*100);
+      el('progressBar').style.width=pct+'%';
+      el('percentTxt').textContent=Math.floor(pct)+'%';
+      el('circleEarn').textContent=todayEarnings.toFixed(4);
+      el('circleCap').textContent=cap.toFixed(2);
+      el('circlePct').textContent=Math.floor(pct)+'%';
+      circle.setAttribute('stroke-dashoffset',CIRC*(1-Math.min(1,todayEarnings/cap)));
+      const left=timeLeftMs();
+      el('timeLeft').textContent=fmtHMS(left);
+      el('circleTime').textContent=fmtHMS(left);
+      el('miningBtn').textContent=isMining?'⏸ Stop Mining':'▶ Start Mining';
+    }
+
+    let intervalId=null;
+    function startMining(){if(intervalId)return;isMining=true;localStorage.setItem(K_MINING,'true');intervalId=setInterval(()=>{if(document.visibilityState!=='visible')return;checkReset();const cap=dailyCap(goldEnergy);const rps=perSecond();if(todayEarnings<cap){todayEarnings=Math.min(cap,todayEarnings+rps);totalBalance+=rps;localStorage.setItem(K_TODAY,todayEarnings);localStorage.setItem(K_TOTAL,totalBalance);}updateUI();},1000);updateUI();}
+    function stopMining(){isMining=false;localStorage.setItem(K_MINING,'false');clearInterval(intervalId);intervalId=null;updateUI();}
+    el('miningBtn').addEventListener('click',()=>{isMining?stopMining():startMining();});
+
+    // --- Reward Ad ---
+    const RewardAd = window.Adsgram.init({ blockId: "14346" });
+    RewardAd.show().then(res=>{ if(res.done){ totalBalance+=0.01; localStorage.setItem(K_TOTAL,totalBalance); updateUI(); }}).catch(console.log);
+
+    // --- Claim Gold Task (Rotating 3 tasks) ---
+    const claimBtn = el('claimGoldBtn');
+    const taskSection = el('claimTaskSection');
+    const claimTasks = ["task-14871","task-14345","task-14890"];
+    let currentClaimIndex = 0;
+
+    claimBtn.addEventListener('click', () => {
+      const blockId = claimTasks[currentClaimIndex];
+      taskSection.innerHTML = `<adsgram-task data-block-id="${blockId}" class="task"></adsgram-task>`;
+      const taskEl = taskSection.querySelector('adsgram-task');
+
+      taskEl.addEventListener('reward', () => {
+        goldEnergy += 5;
+        localStorage.setItem(K_ENERGY, goldEnergy);
+        updateUI();
+        alert("✅ +5 Gold Energy added!");
+
+        // Rotate to next task
+        currentClaimIndex = (currentClaimIndex + 1) % claimTasks.length;
+        taskSection.innerHTML = '';
+      }, { once: true });
+    });
+
+    // --- Referral & Withdraw ---
+    el('referralBtn').addEventListener('click',()=>{
+      const uid=(tg.initDataUnsafe?.user?.id)||Math.floor(Math.random()*1e9);
+      navigator.clipboard.writeText(`https://t.me/Freeminings_bot?start=${uid}`);
+      alert('Referral link copied! Earn 5% from friends mining.');
+    });
+    el('withdrawBtn').addEventListener('click',()=>{
+      if(totalBalance<10){alert("❌ Minimum $10 required to withdraw."); return;}
+      const method = el('method').value;
+      const details = el('details').value.trim();
+      if(!details){alert("Enter account/wallet details."); return;}
+      tg.sendData(JSON.stringify({action:'withdraw', amount:Number(totalBalance.toFixed(2)), method, details}));
+      alert("✅ Withdraw request sent to admin.");
+      totalBalance = 0; localStorage.setItem(K_TOTAL,totalBalance.toFixed(2)); updateUI();
+    });
+    el('infoBtn').addEventListener('click',()=>{alert("How to earn:\n• Start Mining\n• Profit adds every second until cap\n• Claim Gold (complete task) for +5 Energy\n• Withdraw from $10");});
+
+    checkReset(); updateUI(); if(isMining) startMining();
+    window.addEventListener("load", ()=>{ el("mainContainer").style.display = "block"; });
+  </script>
+</body>
+</html>
