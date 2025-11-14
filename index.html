@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -161,13 +161,13 @@
     el('miningBtn').addEventListener('click',()=>{isMining?stopMining():startMining();});
 
     // --- Reward Ad ---
-    const RewardAd = window.Adsgram.init({ blockId: "14346" });
+    const RewardAd = window.Adsgram.init({ blockId: "17602" });
     RewardAd.show().then(res=>{ if(res.done){ totalBalance+=0.01; localStorage.setItem(K_TOTAL,totalBalance); updateUI(); }}).catch(console.log);
 
     // --- Claim Gold Task (Rotating 3 tasks) ---
     const claimBtn = el('claimGoldBtn');
     const taskSection = el('claimTaskSection');
-    const claimTasks = ["task-14871","task-14345","task-14890"];
+    const claimTasks = ["task-task-17599","task-17600","task-task-17601"];
     let currentClaimIndex = 0;
 
     claimBtn.addEventListener('click', () => {
