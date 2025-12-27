@@ -34,24 +34,25 @@
     input,select{width:100%;padding:10px;border-radius:10px;border:1px solid #2b3648;background:#0f1420;color:var(--text)}
     .hr{height:1px;background:#233047;margin:12px 0}
     #claimTaskSection { margin-top: 12px; }
-
-    /* --- Join Channel Popup --- */
+    /* --- JOIN POPUP --- */
     #joinPopup {
-      position:fixed;top:0;left:0;width:100%;height:100%;
-      background:rgba(0,0,0,0.95);z-index:9999;display:none;
-      align-items:center;justify-content:center;flex-direction:column;
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.95);
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      z-index: 9999; display: none; color: var(--text); text-align: center;
     }
-    #joinPopup h2 {color:white;text-align:center;margin-bottom:20px;}
     #joinPopup a {
-      background:#00c853;color:#07130a;padding:12px 20px;border-radius:10px;
-      font-weight:bold;text-decoration:none;margin-top:10px;
+      background: var(--accent); color: #07130a; padding: 12px 20px;
+      border-radius: 10px; font-weight: bold; text-decoration: none; margin-top: 10px;
     }
   </style>
 </head>
 <body>
+  <!-- MAIN CONTAINER -->
   <div class="container" id="mainContainer" style="display:none;">
     <h1>☁️ Cloud Mining</h1>
     <div class="grid">
+
       <!-- Earnings Card -->
       <div class="card">
         <div class="row"><div>💰 Total Balance</div><div class="muted">Withdraw ≥ $10</div></div>
@@ -127,10 +128,10 @@
     </div>
   </div>
 
-  <!-- JOIN POPUP -->
+  <!-- JOIN CHANNEL POPUP -->
   <div id="joinPopup">
     <h2>🚫 You must join our channel to continue</h2>
-    <a href="https://t.me/YourChannelHere" target="_blank" onclick="joinChannelClicked()">👉 Join Channel</a>
+    <a href="https://t.me/Konnetearnchannel" target="_blank" onclick="joinChannelClicked()">👉 Join @Konnetearnchannel</a>
   </div>
 
   <script>
@@ -146,7 +147,6 @@
     const el=id=>document.getElementById(id);
     const circle=el('circleBar'); const CIRC=2*Math.PI*85; circle.setAttribute('stroke-dasharray',String(CIRC));
 
-    // --- Daily calculation functions ---
     function dailyCap(e){ if(e>=1000)return 0.20;if(e>=100)return 0.16;if(e>=60)return 0.10;if(e>=20)return 0.002;return 0.005;}
     function perSecond(){return dailyCap(goldEnergy)/86400;}
     function checkReset(){const now=Date.now();if(now-lastReset>=86400000){todayEarnings=0;lastReset=now;localStorage.setItem(K_TODAY,todayEarnings);localStorage.setItem(K_LAST_RESET,lastReset);}}
@@ -173,7 +173,6 @@
       el('miningBtn').textContent=isMining?'⏸ Stop Mining':'▶ Start Mining';
     }
 
-    // --- Mining controls ---
     let intervalId=null;
     function startMining(){if(intervalId)return;isMining=true;localStorage.setItem(K_MINING,'true');intervalId=setInterval(()=>{if(document.visibilityState!=='visible')return;checkReset();const cap=dailyCap(goldEnergy);const rps=perSecond();if(todayEarnings<cap){todayEarnings=Math.min(cap,todayEarnings+rps);totalBalance+=rps;localStorage.setItem(K_TODAY,todayEarnings);localStorage.setItem(K_TOTAL,totalBalance);}updateUI();},1000);updateUI();}
     function stopMining(){isMining=false;localStorage.setItem(K_MINING,'false');clearInterval(intervalId);intervalId=null;updateUI();}
@@ -183,30 +182,31 @@
     const RewardAd = window.Adsgram.init({ blockId: "17602" });
     RewardAd.show().then(res=>{
       if(res.done){ totalBalance+=0.01; localStorage.setItem(K_TOTAL,totalBalance); updateUI(); }
-      // Show join popup after ad
       if(!localStorage.getItem("joinedRewardGiven")) el('joinPopup').style.display='flex';
     }).catch(err=>{
       console.log(err);
       if(!localStorage.getItem("joinedRewardGiven")) el('joinPopup').style.display='flex';
     });
 
-    // --- Join Channel ---
+    // --- Join Channel Click ---
     function joinChannelClicked(){
       if(!localStorage.getItem("joinedRewardGiven")){
-        goldEnergy += 5; // reward for joining
-        localStorage.setItem(K_ENERGY,goldEnergy);
+        goldEnergy += 5; // reward
+        localStorage.setItem(K_ENERGY, goldEnergy);
         localStorage.setItem("joinedRewardGiven","yes");
         alert("🎉 Thanks for joining! +5 Gold Energy");
         updateUI();
       }
       el('joinPopup').style.display='none';
+      el('mainContainer').style.display='block';
     }
 
-    // --- Claim Gold ---
+    // --- Claim Gold Task ---
     const claimBtn = el('claimGoldBtn');
     const taskSection = el('claimTaskSection');
     const claimTasks = ["task-17599","task-17600","task-task-17601"];
     let currentClaimIndex = 0;
+
     claimBtn.addEventListener('click', () => {
       const blockId = claimTasks[currentClaimIndex];
       taskSection.innerHTML = `<adsgram-task data-block-id="${blockId}" class="task"></adsgram-task>`;
@@ -238,8 +238,15 @@
     });
     el('infoBtn').addEventListener('click',()=>{alert("How to earn:\n• Start Mining\n• Profit adds every second until cap\n• Claim Gold (complete task) for +5 Energy\n• Withdraw from $10");});
 
-    checkReset(); updateUI(); if(isMining) startMining();
-    window.addEventListener("load", ()=>{ el("mainContainer").style.display = "block"; });
+    // --- Init ---
+    checkReset(); updateUI();
+    window.addEventListener("load", ()=>{
+      if(localStorage.getItem("joinedRewardGiven")){
+        el("mainContainer").style.display="block";
+      } else {
+        el("joinPopup").style.display='flex';
+      }
+    });
   </script>
 </body>
 </html>
