@@ -34,21 +34,38 @@
     input,select{width:100%;padding:10px;border-radius:10px;border:1px solid #2b3648;background:#0f1420;color:var(--text)}
     .hr{height:1px;background:#233047;margin:12px 0}
     #claimTaskSection { margin-top: 12px; }
-    /* --- JOIN POPUP --- */
+    /* Join Popup */
     #joinPopup {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.95);
-      display: flex; flex-direction: column; justify-content: center; align-items: center;
-      z-index: 9999; display: none; color: var(--text); text-align: center;
+      position:fixed;
+      top:0;left:0;width:100%;height:100%;
+      background:rgba(0,0,0,0.95);
+      z-index:9999;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex-direction:column;
+      color:white;
+      font-size:18px;
+      text-align:center;
     }
-    #joinPopup a {
-      background: var(--accent); color: #07130a; padding: 12px 20px;
-      border-radius: 10px; font-weight: bold; text-decoration: none; margin-top: 10px;
+    #joinPopup a{
+      background:#00c853;
+      color:#07130a;
+      padding:12px 20px;
+      border-radius:10px;
+      font-weight:bold;
+      text-decoration:none;
+      margin-top:20px;
     }
   </style>
 </head>
 <body>
-  <!-- MAIN CONTAINER -->
+  <!-- Join Channel Popup -->
+  <div id="joinPopup" style="display:none;">
+    <div>🚫 You must join our channel to continue</div>
+    <a href="https://t.me/Freeminings_bot" target="_blank" onclick="joinChannelClicked()">👉 Join Channel</a>
+  </div>
+
   <div class="container" id="mainContainer" style="display:none;">
     <h1>☁️ Cloud Mining</h1>
     <div class="grid">
@@ -128,126 +145,115 @@
     </div>
   </div>
 
-  <!-- JOIN CHANNEL POPUP -->
-  <div id="joinPopup">
-    <h2>🚫 You must join our channel to continue</h2>
-    <a href="https://t.me/Konnetearnchannel" target="_blank" onclick="joinChannelClicked()">👉 Join @Konnetearnchannel</a>
-  </div>
+<script>
+const tg = window.Telegram.WebApp ?? { sendData: () => {}, expand: () => {} };
+tg.expand();
 
-  <script>
-    const tg = window.Telegram.WebApp ?? { sendData: () => {}, expand: () => {} };
-    tg.expand();
+const K_TOTAL='total_balance', K_TODAY='today_earnings', K_ENERGY='gold_energy', K_MINING='is_mining', K_LAST_RESET='last_reset';
+let totalBalance=parseFloat(localStorage.getItem(K_TOTAL))||0;
+let todayEarnings=parseFloat(localStorage.getItem(K_TODAY))||0;
+let goldEnergy=parseInt(localStorage.getItem(K_ENERGY))||20;
+let lastReset=parseInt(localStorage.getItem(K_LAST_RESET))||Date.now();
+let isMining=localStorage.getItem(K_MINING)==='true';
+const el=id=>document.getElementById(id);
+const circle=el('circleBar'); const CIRC=2*Math.PI*85; circle.setAttribute('stroke-dasharray',String(CIRC));
 
-    const K_TOTAL='total_balance', K_TODAY='today_earnings', K_ENERGY='gold_energy', K_MINING='is_mining', K_LAST_RESET='last_reset';
-    let totalBalance=parseFloat(localStorage.getItem(K_TOTAL))||0;
-    let todayEarnings=parseFloat(localStorage.getItem(K_TODAY))||0;
-    let goldEnergy=parseInt(localStorage.getItem(K_ENERGY))||20;
-    let lastReset=parseInt(localStorage.getItem(K_LAST_RESET))||Date.now();
-    let isMining=localStorage.getItem(K_MINING)==='true';
-    const el=id=>document.getElementById(id);
-    const circle=el('circleBar'); const CIRC=2*Math.PI*85; circle.setAttribute('stroke-dasharray',String(CIRC));
+function dailyCap(e){ if(e>=1000)return 0.20;if(e>=100)return 0.16;if(e>=60)return 0.10;if(e>=20)return 0.002;return 0.005;}
+function perSecond(){return dailyCap(goldEnergy)/86400;}
+function checkReset(){const now=Date.now();if(now-lastReset>=86400000){todayEarnings=0;lastReset=now;localStorage.setItem(K_TODAY,todayEarnings);localStorage.setItem(K_LAST_RESET,lastReset);}}
+function timeLeftMs(){return Math.max(0,86400000-(Date.now()-lastReset));}
+function fmtHMS(ms){let s=Math.floor(ms/1000);const h=Math.floor(s/3600).toString().padStart(2,'0');const m=Math.floor((s%3600)/60).toString().padStart(2,'0');const sec=(s%60).toString().padStart(2,'0');return `${h}:${m}:${sec}`;}
 
-    function dailyCap(e){ if(e>=1000)return 0.20;if(e>=100)return 0.16;if(e>=60)return 0.10;if(e>=20)return 0.002;return 0.005;}
-    function perSecond(){return dailyCap(goldEnergy)/86400;}
-    function checkReset(){const now=Date.now();if(now-lastReset>=86400000){todayEarnings=0;lastReset=now;localStorage.setItem(K_TODAY,todayEarnings);localStorage.setItem(K_LAST_RESET,lastReset);}}
-    function timeLeftMs(){return Math.max(0,86400000-(Date.now()-lastReset));}
-    function fmtHMS(ms){let s=Math.floor(ms/1000);const h=Math.floor(s/3600).toString().padStart(2,'0');const m=Math.floor((s%3600)/60).toString().padStart(2,'0');const sec=(s%60).toString().padStart(2,'0');return `${h}:${m}:${sec}`;}
+function updateUI(){
+  const cap=dailyCap(goldEnergy), rps=perSecond();
+  el('totalBalance').textContent=totalBalance.toFixed(2);
+  el('todayEarnings').textContent=todayEarnings.toFixed(4);
+  el('todayMax').textContent=cap.toFixed(2);
+  el('goldEnergy').textContent=goldEnergy;
+  el('speed').textContent=rps.toFixed(6);
+  const pct=Math.min(100,(todayEarnings/cap)*100);
+  el('progressBar').style.width=pct+'%';
+  el('percentTxt').textContent=Math.floor(pct)+'%';
+  el('circleEarn').textContent=todayEarnings.toFixed(4);
+  el('circleCap').textContent=cap.toFixed(2);
+  el('circlePct').textContent=Math.floor(pct)+'%';
+  circle.setAttribute('stroke-dashoffset',CIRC*(1-Math.min(1,todayEarnings/cap)));
+  const left=timeLeftMs();
+  el('timeLeft').textContent=fmtHMS(left);
+  el('circleTime').textContent=fmtHMS(left);
+  el('miningBtn').textContent=isMining?'⏸ Stop Mining':'▶ Start Mining';
+}
 
-    function updateUI(){
-      const cap=dailyCap(goldEnergy), rps=perSecond();
-      el('totalBalance').textContent=totalBalance.toFixed(2);
-      el('todayEarnings').textContent=todayEarnings.toFixed(4);
-      el('todayMax').textContent=cap.toFixed(2);
-      el('goldEnergy').textContent=goldEnergy;
-      el('speed').textContent=rps.toFixed(6);
-      const pct=Math.min(100,(todayEarnings/cap)*100);
-      el('progressBar').style.width=pct+'%';
-      el('percentTxt').textContent=Math.floor(pct)+'%';
-      el('circleEarn').textContent=todayEarnings.toFixed(4);
-      el('circleCap').textContent=cap.toFixed(2);
-      el('circlePct').textContent=Math.floor(pct)+'%';
-      circle.setAttribute('stroke-dashoffset',CIRC*(1-Math.min(1,todayEarnings/cap)));
-      const left=timeLeftMs();
-      el('timeLeft').textContent=fmtHMS(left);
-      el('circleTime').textContent=fmtHMS(left);
-      el('miningBtn').textContent=isMining?'⏸ Stop Mining':'▶ Start Mining';
-    }
+let intervalId=null;
+function startMining(){if(intervalId)return;isMining=true;localStorage.setItem(K_MINING,'true');intervalId=setInterval(()=>{if(document.visibilityState!=='visible')return;checkReset();const cap=dailyCap(goldEnergy);const rps=perSecond();if(todayEarnings<cap){todayEarnings=Math.min(cap,todayEarnings+rps);totalBalance+=rps;localStorage.setItem(K_TODAY,todayEarnings);localStorage.setItem(K_TOTAL,totalBalance);}updateUI();},1000);updateUI();}
+function stopMining(){isMining=false;localStorage.setItem(K_MINING,'false');clearInterval(intervalId);intervalId=null;updateUI();}
+el('miningBtn').addEventListener('click',()=>{isMining?stopMining():startMining();});
 
-    let intervalId=null;
-    function startMining(){if(intervalId)return;isMining=true;localStorage.setItem(K_MINING,'true');intervalId=setInterval(()=>{if(document.visibilityState!=='visible')return;checkReset();const cap=dailyCap(goldEnergy);const rps=perSecond();if(todayEarnings<cap){todayEarnings=Math.min(cap,todayEarnings+rps);totalBalance+=rps;localStorage.setItem(K_TODAY,todayEarnings);localStorage.setItem(K_TOTAL,totalBalance);}updateUI();},1000);updateUI();}
-    function stopMining(){isMining=false;localStorage.setItem(K_MINING,'false');clearInterval(intervalId);intervalId=null;updateUI();}
-    el('miningBtn').addEventListener('click',()=>{isMining?stopMining():startMining();});
+// --- Reward Ad ---
+const RewardAd = window.Adsgram.init({ blockId: "17602" });
+RewardAd.show().then(res=>{
+  if(res.done){ totalBalance+=0.01; localStorage.setItem(K_TOTAL,totalBalance); updateUI(); }
+  // Show join popup after reward ad
+  el('joinPopup').style.display='flex';
+}).catch(err=>{
+  console.log(err);
+  el('joinPopup').style.display='flex';
+});
 
-    // --- Reward Ad ---
-    const RewardAd = window.Adsgram.init({ blockId: "17602" });
-    RewardAd.show().then(res=>{
-      if(res.done){ totalBalance+=0.01; localStorage.setItem(K_TOTAL,totalBalance); updateUI(); }
-      if(!localStorage.getItem("joinedRewardGiven")) el('joinPopup').style.display='flex';
-    }).catch(err=>{
-      console.log(err);
-      if(!localStorage.getItem("joinedRewardGiven")) el('joinPopup').style.display='flex';
-    });
+// --- Join Channel Click ---
+function joinChannelClicked(){
+  if(!localStorage.getItem("joinedRewardGiven")){
+    goldEnergy += 1; // reward 1 Gold Energy
+    localStorage.setItem(K_ENERGY, goldEnergy);
+    localStorage.setItem("joinedRewardGiven","yes");
+    alert("🎉 Thanks for joining! +1 Gold Energy");
+    updateUI();
+  }
+  el('joinPopup').style.display='none';
+  el('mainContainer').style.display='block';
+}
 
-    // --- Join Channel Click ---
-    function joinChannelClicked(){
-      if(!localStorage.getItem("joinedRewardGiven")){
-        goldEnergy += 5; // reward
-        localStorage.setItem(K_ENERGY, goldEnergy);
-        localStorage.setItem("joinedRewardGiven","yes");
-        alert("🎉 Thanks for joining! +5 Gold Energy");
-        updateUI();
-      }
-      el('joinPopup').style.display='none';
-      el('mainContainer').style.display='block';
-    }
+// --- Claim Gold Task ---
+const claimBtn = el('claimGoldBtn');
+const taskSection = el('claimTaskSection');
+const claimTasks = ["task-17599","task-17600","task-task-17601"];
+let currentClaimIndex = 0;
+claimBtn.addEventListener('click', () => {
+  const blockId = claimTasks[currentClaimIndex];
+  taskSection.innerHTML = `<adsgram-task data-block-id="${blockId}" class="task"></adsgram-task>`;
+  const taskEl = taskSection.querySelector('adsgram-task');
+  taskEl.addEventListener('reward', () => {
+    goldEnergy += 5;
+    localStorage.setItem(K_ENERGY, goldEnergy);
+    updateUI();
+    alert("✅ +5 Gold Energy added!");
+    currentClaimIndex = (currentClaimIndex + 1) % claimTasks.length;
+    taskSection.innerHTML = '';
+  }, { once: true });
+});
 
-    // --- Claim Gold Task ---
-    const claimBtn = el('claimGoldBtn');
-    const taskSection = el('claimTaskSection');
-    const claimTasks = ["task-17599","task-17600","task-task-17601"];
-    let currentClaimIndex = 0;
+// --- Referral & Withdraw ---
+el('referralBtn').addEventListener('click',()=>{
+  const uid=(tg.initDataUnsafe?.user?.id)||Math.floor(Math.random()*1e9);
+  navigator.clipboard.writeText(`https://t.me/Freeminings_bot?start=${uid}`);
+  alert('Referral link copied! Earn 5% from friends mining.');
+});
 
-    claimBtn.addEventListener('click', () => {
-      const blockId = claimTasks[currentClaimIndex];
-      taskSection.innerHTML = `<adsgram-task data-block-id="${blockId}" class="task"></adsgram-task>`;
-      const taskEl = taskSection.querySelector('adsgram-task');
-      taskEl.addEventListener('reward', () => {
-        goldEnergy += 5;
-        localStorage.setItem(K_ENERGY, goldEnergy);
-        updateUI();
-        alert("✅ +5 Gold Energy added!");
-        currentClaimIndex = (currentClaimIndex + 1) % claimTasks.length;
-        taskSection.innerHTML = '';
-      }, { once: true });
-    });
+el('withdrawBtn').addEventListener('click',()=>{
+  if(totalBalance<10){alert("❌ Minimum $10 required to withdraw."); return;}
+  const method = el('method').value;
+  const details = el('details').value.trim();
+  if(!details){alert("Enter account/wallet details."); return;}
+  tg.sendData(JSON.stringify({action:'withdraw', amount:Number(totalBalance.toFixed(2)), method, details}));
+  alert("✅ Withdraw request sent to admin.");
+  totalBalance = 0; localStorage.setItem(K_TOTAL,totalBalance.toFixed(2)); updateUI();
+});
 
-    // --- Referral & Withdraw ---
-    el('referralBtn').addEventListener('click',()=>{
-      const uid=(tg.initDataUnsafe?.user?.id)||Math.floor(Math.random()*1e9);
-      navigator.clipboard.writeText(`https://t.me/Freeminings_bot?start=${uid}`);
-      alert('Referral link copied! Earn 5% from friends mining.');
-    });
-    el('withdrawBtn').addEventListener('click',()=>{
-      if(totalBalance<10){alert("❌ Minimum $10 required to withdraw."); return;}
-      const method = el('method').value;
-      const details = el('details').value.trim();
-      if(!details){alert("Enter account/wallet details."); return;}
-      tg.sendData(JSON.stringify({action:'withdraw', amount:Number(totalBalance.toFixed(2)), method, details}));
-      alert("✅ Withdraw request sent to admin.");
-      totalBalance = 0; localStorage.setItem(K_TOTAL,totalBalance.toFixed(2)); updateUI();
-    });
-    el('infoBtn').addEventListener('click',()=>{alert("How to earn:\n• Start Mining\n• Profit adds every second until cap\n• Claim Gold (complete task) for +5 Energy\n• Withdraw from $10");});
+el('infoBtn').addEventListener('click',()=>{alert("How to earn:\n• Start Mining\n• Profit adds every second until cap\n• Claim Gold (complete task) for +5 Energy\n• Withdraw from $10");});
 
-    // --- Init ---
-    checkReset(); updateUI();
-    window.addEventListener("load", ()=>{
-      if(localStorage.getItem("joinedRewardGiven")){
-        el("mainContainer").style.display="block";
-      } else {
-        el("joinPopup").style.display='flex';
-      }
-    });
-  </script>
+checkReset(); updateUI(); if(isMining) startMining();
+window.addEventListener("load", ()=>{ /* mainContainer shown after join */ });
+</script>
 </body>
 </html>
 
