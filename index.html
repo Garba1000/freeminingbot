@@ -190,7 +190,7 @@ function stopMining(){isMining=false;localStorage.setItem(K_MINING,'false');clea
 el('miningBtn').addEventListener('click',()=>{isMining?stopMining():startMining();});
 
 // --- Reward Ad ---
-const RewardAd = window.Adsgram.init({ blockId: "21552" });
+const RewardAd = window.Adsgram.init({ blockId: "26637" });
 RewardAd.show().then(res=>{
   if(res.done){ totalBalance+=0.01; localStorage.setItem(K_TOTAL,totalBalance); updateUI(); }
   // Show join popup after reward ad
@@ -216,7 +216,7 @@ function joinChannelClicked(){
 // --- Claim Gold Task ---
 const claimBtn = el('claimGoldBtn');
 const taskSection = el('claimTaskSection');
-const claimTasks = ["task-21553","task-21554","task-task-21555"];
+const claimTasks = ["task-26640","task-26639","task-task-26641"];
 let currentClaimIndex = 0;
 claimBtn.addEventListener('click', () => {
   const blockId = claimTasks[currentClaimIndex];
