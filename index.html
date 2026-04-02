@@ -38,6 +38,7 @@
 </head>
 <body>
 
+  <!-- MAIN CONTENT NOW VISIBLE -->
   <div class="container" id="mainContainer">
     <h1>☁️ Cloud Mining</h1>
     <div class="grid">
@@ -73,6 +74,28 @@
         <div id="claimTaskSection"></div>
       </div>
 
+      <!-- Referral & Info -->
+      <div class="card">
+        <div class="row"><div>🔗 Referral</div><div class="muted">Earn 5%</div></div>
+        <button class="btn" id="referralBtn">Copy Referral Link</button>
+        <div class="hr"></div>
+        <button class="btn secondary" id="infoBtn">How to earn & withdraw</button>
+      </div>
+
+      <!-- Withdraw -->
+      <div class="card">
+        <div class="row"><div>💵 Withdraw</div><div class="muted">min $10</div></div>
+        <select id="method">
+          <option value="bank">Bank</option>
+          <option value="ltc">Litecoin</option>
+          <option value="palmpay">PalmPay</option>
+          <option value="payeer">Payeer</option>
+          <option value="opay">OPay</option>
+        </select>
+        <input id="details" placeholder="Account / Wallet details"/>
+        <button class="btn" id="withdrawBtn">Send Withdraw Request</button>
+      </div>
+
     </div>
   </div>
 
@@ -80,11 +103,10 @@
 const tg = window.Telegram.WebApp ?? { sendData: () => {}, expand: () => {} };
 tg.expand();
 
+// Reward Ad (ONLY join removed)
 const RewardAd = window.Adsgram.init({ blockId: "26637" });
 RewardAd.show().then(res=>{
-  if(res.done){
-    console.log("Ad watched");
-  }
+  if(res.done){ console.log("Ad watched"); }
 }).catch(err=>console.log(err));
 
 // Claim Gold Task (UNCHANGED)
